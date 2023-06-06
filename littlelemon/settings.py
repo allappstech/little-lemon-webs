@@ -11,6 +11,7 @@ https://docs.djangoproject.com/en/4.1/ref/settings/
 """
 
 from pathlib import Path
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -39,6 +40,12 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     # The settings for app updated for the Graded assessment
     'restaurant',
+    'rest_framework',
+    'djoser',
+    #'rest_framework.authtoken',
+    'rest_framework_simplejwt',
+    #'debug_toolbar',
+     
 ]
 
 MIDDLEWARE = [
@@ -52,6 +59,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'littlelemon.urls'
+
 
 TEMPLATES = [
     {
@@ -83,7 +91,10 @@ DATABASES = {
         'HOST' : '127.0.0.1',
         'PORT' : '3306',
         'USER' : 'root',
-        'PASSWORD' : 'root',
+        'PASSWORD': 'hwf5-pQl3-@fdBtk8#',
+    
+        #'PASSWORD' : 'root@123',
+        
     }
 }
 
@@ -127,11 +138,30 @@ USE_TZ = True
 # The settings for static files have been updated for the Graded assessment
 STATIC_URL = 'restaurant/static/'
 
+
+'''
 STATICFILES_DIRS = [
-    "restaurant/static",
-]
+    os.path.join(BASE_DIR, 'restaurant', 'static'),
+ #   "restaurant/static",
+]  '''
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.1/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+
+REST_FRAMEWORK = {
+    'DEFAULT_FILTER_BACKENDS': [
+        'rest_framework.filters.OrderingFilter',
+        'rest_framework.filters.SearchFilter',
+    ],
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.TokenAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+    #'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    #'PAGE_SIZE': 2
+}

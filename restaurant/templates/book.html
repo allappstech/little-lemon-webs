@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 {% load static %}
 
@@ -9,25 +10,44 @@
     <div class="row">
       <!--Begin col-->
       <div class="column">
-          {% csrf_token %}
+
           <form method="POST" id="form">
-            <!-- {% csrf_token %} -->
+            {% csrf_token %}
             <p>
-              <label for="first_name">Name:</label>
-              <input type="text" placeholder="Your Name" maxlength="200" required="" id="first_name">
+              <label for="first_name">First Name:</label>
+              <input type="text" name="first_name" placeholder="Your Name" maxlength="200" required id="first_name">
+              
+
             </p>
             <p>
-                <label for="reservation_date">Reservation date:</label>
-                <input type="date" id="reservation_date">
+              <label for="reservation_date">Reservation Date:</label>
+              <input type="date" id="reservation_date" name="reservation_date" value="{{reservation_date|date:'YYYY-MM-DD'}}" required>
+              
+
             </p>
-      
             <p>
-              <label for="reservation_slot">Reservation time:</label>
-              <select id="reservation_slot">
-                <option value="0" disabled>Select time</option>
+              <label for="reservation_slot">Reservation Time:</label>
+              <select id="reservation_slot" name="reservation_slot" title="Reservation Time" required>
+                <option value="">Select time</option>
+                <option value="10">10 AM</option>
+                <option value="11">11 AM</option>
+                <option value="12">12 PM</option>
+                <option value="13">1 PM</option>
+                <option value="14">2 PM</option>
+                <option value="15">3 PM</option>
+                <option value="16">4 PM</option>
+                <option value="17">5 PM</option>
+                <option value="18">6 PM</option>
+                <option value="19">7 PM</option>
+                <option value="20">8 PM</option>
+                <option value="21">9 PM</option>
+                <option value="22">10 PM</option>
               </select>
             </p>
-            <button type="button" id="button">Reserve</button>
+            <button type="submit" id="button">Reserve Now</button>
+            {% if message %}
+            <p>{{ message }}</p>
+            {% endif %}
           </form>
       </div>
       <!--End col-->
@@ -36,6 +56,11 @@
       <div class="column">
         <h2>Bookings For <span id="today"></span></h2>
         <div id="bookings">
+          {% for booking in bookings %}
+             <p>Name: {{ booking.first_name }}</p>
+             <p>Reservation Date: {{ booking.reservation_date }}</p>
+             <p>Reservation Time: {{ booking.reservation_slot }}</p>
+          {% endfor %}
         </div>
       </div>
       <!--End col-->
@@ -43,80 +68,118 @@
     <!--End row-->
 
 
-
-
   </article>
 </section>
+
 <script>
+  const date = new Date();
+  document.getElementById('reservation_date').value = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')}`;
+  getBookings();
 
-  const date = new Date()
-  document.getElementById('reservation_date').value = `${date.getFullYear()}-${date.getMonth() + 1}-${date.getDate().toString().padStart(2, "0")}`
-
-  console.log(document.getElementById('reservation_date').value)
-  getBookings()
-
-
-  document.getElementById('reservation_date').addEventListener('change', function(){getBookings()});
-
+  document.getElementById('reservation_date').addEventListener('change', getBookings);
 
   function getBookings() {
-    let reserved_slots = []
-    const date = document.getElementById('reservation_date').value
-    document.getElementById('today').innerHTML = date
-    
+    const date = document.getElementById('reservation_date').value;
+    document.getElementById('today').innerHTML = date;
+
     fetch("{% url 'bookings' %}" + '?date=' + date)
-      .then(r => r.json())
+      .then(response => response.json())
       .then(data => {
-          reserved_slots = []
-          bookings = ""
+        const reservedSlots = [];
+        let bookings = '';
 
-          for (item of data) {
-              console.log(item.fields);
-              reserved_slots.push(item.fields.reservation_slot);
-          bookings += `<p>${item.fields.first_name} - ${formatTime(
-              item.fields.reservation_slot
-          )}</p>`;
-      }
-
-    let slot_options = "<option value=0 disabled>Select time</option>";
-    for(let i = 11; i < 20; i++){
-    const label = formatTime(i);
-    if(reserved_slots.includes(i)){
-    slot_options += `<option value=${i} disabled>${label}</option>`;
-    }else{
-    slot_options += `<option value=${i}>${label}</option>`;
-}
-}
-        
-        document.getElementById('reservation_slot').innerHTML = slot_options;
-        if(bookings==''){
-          bookings = "No bookings";
+        for (const item of data) {
+          reservedSlots.push(item.fields.reservation_slot);
+          bookings += `<p>${item.fields.first_name} - ${formatTime(item.fields.reservation_slot)}</p>`;
         }
+
+        const reservationSlotElement = document.getElementById('reservation_slot');
+        reservationSlotElement.innerHTML = generateSlotOptions(reservedSlots);
+        reservationSlotElement.disabled = false;
+
         document.getElementById('bookings').innerHTML = bookings;
-      })
+      });
+  }
+
+  
+  function generateSlotOptions(reservedSlots) {
+    let options = '<option value="">Select time</option>';
+    for (let i = 10; i <= 22; i++) {
+      const label = formatTime(i);
+      if (reservedSlots.includes(i.toString())) {
+        options += `<option value="${i}" disabled>${label}</option>`;
+      } else {
+        options += `<option value="${i}">${label}</option>`;
+      }
+    }
+    return options;
   }
 
   function formatTime(time) {
-    const ampm = time < 12 ? 'AM' : 'PM'
-    const t = time < 12 ? time : time > 12 ? time - 12 : time
-    const label = `${t} ${ampm}`
-    return label
+    const ampm = time < 12 ? 'AM' : 'PM';
+    const hour = time > 12 ? time - 12 : time;
+    return `${hour} ${ampm}`;
   }
 
 
-  document.getElementById('button').addEventListener('click', function (e) {
-    const formdata = {
-      first_name: document.getElementById('first_name').value,
-      reservation_date: document.getElementById('reservation_date').value,
-      reservation_slot: document.getElementById('reservation_slot').value,
-    }
 
-    fetch("{% url 'bookings' %}", { method: 'post', body: JSON.stringify(formdata) })
-      .then(r => r.text())
+
+  document.getElementById('button').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const form = document.getElementById('form');
+    const formdata = {
+      'first_name': document.getElementById('first_name').value,
+      'reservation_date': document.getElementById('reservation_date').value,
+      'reservation_slot': document.getElementById('reservation_slot').value,
+    };
+
+    const csrftoken = getCookie('csrftoken');
+    fetch("{% url 'bookings' %}", {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrftoken,
+      },
+      body: JSON.stringify(formdata),
+    })
+      .then(response => response.json())
       .then(data => {
-        getBookings()
-      })
-  })
+        if (data.success) {
+          
+          Swal.fire({
+            title: 'Success',
+            text: 'Reservation submitted successfully.',
+            icon: 'success',
+            confirmButtonText: 'OK'
+          }).then(() => {
+            location.reload();
+          });
+        } else {
+          Swal.fire({
+            title: 'Error',
+            text: 'Reservation could not be submitted. Please try again.',
+            icon: 'error',
+            confirmButtonText: 'OK'
+          });
+        }
+      });
+  });
+
+
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].trim();
+        if (cookie.substring(0, name.length + 1) === (name + '=')) {
+          cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
 </script>
 {% endblock %}
-
